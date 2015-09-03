@@ -43,6 +43,7 @@ void setup() {
   lcd_dis.backlight();
   
   welcome_message();
+  init_check();
   
 }
 
@@ -50,52 +51,63 @@ void loop() {
   
   // Listening for key turn
   if (digitalRead(key) == HIGH) {
-    alarm_stat = true;
-  } else {
-    alarm_stat = false;
+    
+    if (alarm_stat != true) {
+      alarm_stat = true;
+      activate();
+    }
+    
+  } else if (digitalRead(key) == LOW) {
+    
+    if (alarm_stat != false) {
+      alarm_stat = false;
+      deactivate();
+    }
+    
   }
-  
-  // Listening for door open
-  if ((digitalRead(reed_1) && digitalRead(reed_2)) == HIGH) {
-    door_open = false;
-  } else {
-    door_open = true; 
-  }
-  
-  // Checking if the door is open and the alarm is active
-  if ((alarm_stat && door_open) == true) {
-    sound_alarm();
-  } 
   
 }
 
-// Function used to sound the alarm and listen for key
-void sound_alarm() {
+// Activates the alarm
+void activate() {
   
- while (alarm_stat == true) {
-   if (digitalRead(key) == LOW) {
-     turn_off_alarm();
-     alarm_stat = false;
-   } else {
-     turn_on_alarm();
-     alarm_stat = true; 
-   }
- }
- 
- return;
+  update_disp(1); 
+  
+  while (alarm_stat) {
+      
+    if ((digitalRead(reed_1) && digitalRead(reed_2)) == LOW) {
+      
+      digitalWrite(led, HIGH);
+      
+      lcd_dis.println("                ");
+      lcd_dis.setCursor(0, 1);
+      lcd_dis.print("ALARM TRIGGERED");
+      
+      if (digitalRead(key) == LOW) {
+        alarm_stat = false;
+        deactivate();
+        break;
+      }
+      
+    } else if (digitalRead(key) == LOW) {
+      alarm_stat = false;
+      deactivate();
+      break;
+    }
+    
+  }
+  
+  return;
   
 }
 
-// Actually sounds the alarm
-void turn_off_alarm() {
+void deactivate() {
+  
   digitalWrite(led, LOW);
+  update_disp(0); 
+  
   return;
-}
-
-// Turns off the alarm
-void turn_on_alarm() {
-  digitalWrite(led, HIGH);
-  return;
+  
 }
 
 // Function for welcoming the User
@@ -130,7 +142,32 @@ void welcome_message() {
   
 }
 
-void update_disp(char msg[15]) {
-  lcd_dis.clear();
-  lcd_dis.print(msg);
+void update_disp(int sel) {
+  
+  if (sel == 1) {
+    
+    lcd_dis.setCursor(0, 1);
+    lcd_dis.println("                ");
+    lcd_dis.setCursor(0, 1);
+    lcd_dis.print("ACTIVE");
+    
+  } else {
+    
+    lcd_dis.setCursor(0, 1);
+    lcd_dis.println("                ");
+    lcd_dis.setCursor(0, 1);
+    lcd_dis.print("DEACTIVATED");
+    
+  }
+  
+  return;
+  
+}
+
+void init_check() {
+ if (digitalRead(key) == HIGH) {
+   activate();
+ } else {
+   deactivate(); 
+ }
 }
